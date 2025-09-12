@@ -79,6 +79,15 @@
           </div>
 
           <div class="row">
+            <label>Is U/G secondary being spliced?</label>
+            <div class="switch">
+              <input id="ugSplice" type="checkbox" />
+              <label class="toggle" for="ugSplice" aria-label="U/G secondary being spliced"></label>
+              <span id="ugState" class="state off">No</span>
+            </div>
+          </div>
+
+          <div class="row">
             <label>Secondary type</label>
             <div class="seg" role="group" aria-label="Secondary type">
               <button id="secOpen" type="button" aria-pressed="true">Open wire</button>
@@ -169,8 +178,10 @@
     const el = id => document.getElementById(id);
     const primarySplice = el('primarySplice');
     const secondarySplice = el('secondarySplice');
+    const ugSplice = el('ugSplice');
     const primaryState = el('primaryState');
     const secondaryState = el('secondaryState');
+    const ugState = el('ugState');
     const primarySize = el('primarySize');
     const neutralSize = el('neutralSize');
     const secondarySize = el('secondarySize');
@@ -206,6 +217,8 @@
       primaryState.className = 'state ' + (primarySplice.checked ? '' : 'off');
       secondaryState.textContent = secondarySplice.checked ? 'Yes' : 'No';
       secondaryState.className = 'state ' + (secondarySplice.checked ? '' : 'off');
+      ugState.textContent = ugSplice.checked ? 'Yes' : 'No';
+      ugState.className = 'state ' + (ugSplice.checked ? '' : 'off');
     }
 
     // Generate output lines per spec
@@ -270,7 +283,26 @@
         }
       }
 
-      return {lines, errs};
+      // U/G secondary splice
+      if (ugSplice.checked){
+        lines.push('DL7-204-0500(30006425,30005908)');
+      }
+      // Deduplicate identical lines and increment counts
+      const counts = new Map();
+      const order = [];
+      for (const l of lines){
+        const m = l.match(/^(.*?)(?: x(\d+))?$/);
+        const base = m[1];
+        const cnt = m[2] ? parseInt(m[2],10) : 1;
+        if (!counts.has(base)){ order.push(base); counts.set(base, cnt); }
+        else counts.set(base, counts.get(base) + cnt);
+      }
+      const deduped = order.map(base => {
+        const cnt = counts.get(base);
+        return cnt > 1 ? `${base} x${cnt}` : base;
+      });
+
+      return {lines: deduped, errs};
     }
 
     function update(){
@@ -288,14 +320,14 @@
       }
     }
 
-    ;[primarySplice, secondarySplice, primarySize, neutralSize, secondarySize, omitNeutral].forEach(x=>x.addEventListener('change', update));
+    ;[primarySplice, secondarySplice, ugSplice, primarySize, neutralSize, secondarySize, omitNeutral].forEach(x=>x.addEventListener('change', update));
 
     el('copyBtn').addEventListener('click', async ()=>{
       try{ await navigator.clipboard.writeText(out.value); const b = el('copyBtn'); const prev=b.textContent; b.textContent='Copied!'; setTimeout(()=>b.textContent=prev, 900);}catch{ alert('Copy failed. Select the text and copy manually.'); }
     });
 
     el('resetBtn').addEventListener('click', ()=>{
-      primarySplice.checked = false; secondarySplice.checked = false; setSecondaryType('open');
+      primarySplice.checked = false; secondarySplice.checked = false; ugSplice.checked = false; setSecondaryType('open');
       primarySize.selectedIndex = 0; neutralSize.selectedIndex = 0; secondarySize.selectedIndex = 0; omitNeutral.checked = false; update();
     });
 
