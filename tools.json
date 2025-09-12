@@ -1,0 +1,103 @@
+{
+  "settings": {
+    "default_python": "{CONFIG}/venv/Scripts/python.exe",
+    "theme": "superhero"
+  },
+  "tools": [
+    {
+      "name": "Grade Change",
+      "type": "file",
+      "path": "./docs/Grade Change.xlsx",
+      "category": "SPIDA",
+      "description": "Excell sheet for calculating grade change"
+    },
+    {
+      "name": "BOM Cheatsheet",
+      "type": "file",
+      "path": "./docs/BOMs Cheatsheet VER CLF1.xlsx",
+      "category": "CAD",
+      "description": "Excell sheet for BOM help"
+    },
+    {
+      "name": "Honi Overhead Standards",
+      "type": "file",
+      "path": "./docs/Hydro One Overhead Standards Book - June 2025.pdf",
+      "category": "Standards",
+      "description": "Your Holy Bible, metaphorically"
+    },
+    {
+      "name": "Honi Underground Standards",
+      "type": "file",
+      "path": "./docs/Hydro One Underground Standards Book - June 2025.pdf",
+      "category": "Standards",
+      "description": "Underground Standards"
+    },
+    {
+      "name": "CSA Standards",
+      "type": "file",
+      "path": "./docs/CSA C22.3 NO. 1-20_SCANNED VERSION.pdf",
+      "category": "Standards",
+      "description": "Scanned version"
+    },
+    {
+      "name": "Unified Pole Reviewer",
+      "type": "python",
+      "path": "./apps/UPR.pyw",
+      "category": "Review",
+      "description": "Pole Reviewing application",
+      "arguments": [],
+      "working_dir": "./apps",
+      "interpreter": "{CONFIG}/venv/Scripts/python.exe",
+      "env": {}
+    },
+    {
+      "name": "HH2",
+      "type": "url",
+      "path": "https://k-line04k-tek.hh2.com/",
+      "category": "Links",
+      "description": "Timesheet entry"
+    },
+    {
+      "name": "DX Lines mobile app",
+      "type": "url",
+      "path": "https://hydroone.maps.arcgis.com/apps/mapviewer/index.html?webmap=e2096365908742729c9b7692078ede59",
+      "category": "Links",
+      "description": "Basically Field Maps"
+    },
+    {
+      "name": "Conductor Splicing MM",
+      "type": "html",
+      "path": "./html/wire_splice_mm_generator_v_5_neutral_x_2_logic.html",
+      "category": "CAD",
+      "description": "HTML tool for splice MM# generation."
+    },
+    {
+      "name": "SPIDA JSON Viewer",
+      "type": "html",
+      "path": "./html/JSON viewerV8.html",
+      "category": "SPIDA",
+      "description": "HTML tool for Viewing Spida jsons, and exporting DXFs."
+    },
+    {
+      "name": "CSVtoKML Multi",
+      "type": "html",
+      "path": "./html/CSVtoKML_multi.html",
+      "category": "SPIDA",
+      "description": "HTML tool for Generating KMLs for projects"
+    },
+    {
+      "name": "CSVtoKML Multi (no zip)",
+      "type": "html",
+      "path": "./html/CSVtoKML_multi_nozip.html",
+      "category": "SPIDA",
+      "description": "HTML tool for Generating KMLs for projects, produces individual files"
+    },
+    {
+      "name": "Wind speed Calc",
+      "type": "html",
+      "path": "./html/Windspeed.html",
+      "category": "SPIDA",
+      "description": "HTML tool for reducing wind load."
+    }
+  ]
+}

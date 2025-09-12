@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wire Splice MM# Generator</title>
+  <style>
+    :root{
+      --bg:#0f172a; --panel:#0b1226; --edge:#1f2937; --text:#e5e7eb; --muted:#94a3b8; --ring:rgba(56,189,248,.35);
+      --brand:#22c55e; --brand2:#38bdf8; --warn:#f59e0b; --err:#ef4444;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; background:linear-gradient(180deg,#0b1226,#0f172a 35%,#0b1226); color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; min-height:100dvh}
+    .wrap{max-width:980px; margin:0 auto; padding:24px 14px 64px}
+    header{display:flex; gap:10px; align-items:center; margin:10px 0 18px}
+    .badge{font-size:12px; background:linear-gradient(135deg,var(--brand2),var(--brand)); color:#0b1226; font-weight:800; padding:6px 10px; border-radius:999px}
+    h1{margin:0; font-size:clamp(20px,4vw,32px)}
+    .grid{display:grid; grid-template-columns: 1.05fr .95fr; gap:16px}
+    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+    .card{background:radial-gradient(1200px 600px at -5% -10%, #1f2937 0%, #0f172a 55%);
+      border:1px solid var(--edge); border-radius:18px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .card h2{margin:0 0 12px; font-size:18px; color:#e2e8f0}
+    fieldset{border:0; padding:0; margin:0; display:grid; gap:12px}
+    .row{display:grid; grid-template-columns: 220px 1fr; gap:12px; align-items:center}
+    @media (max-width:640px){.row{grid-template-columns:1fr}}
+    label{font-weight:700; color:#cbd5e1}
+    select,button,textarea{font-size:15px}
+    select, input, textarea{background:var(--panel); color:var(--text); border:1px solid var(--edge); border-radius:12px; padding:10px 12px; outline:none}
+    select:focus, textarea:focus{border-color:#38bdf8; box-shadow:0 0 0 4px var(--ring)}
+    .switch{display:flex; align-items:center; gap:10px}
+    .switch input{display:none}
+    .toggle{position:relative; width:54px; height:32px; border-radius:999px; background:#111827; border:1px solid var(--edge); cursor:pointer}
+    .toggle::after{content:""; position:absolute; top:3px; left:3px; width:26px; height:26px; border-radius:999px; background:#374151; transition:.2s ease}
+    .switch input:checked + .toggle{background:linear-gradient(135deg,var(--brand2),var(--brand)); border-color:transparent}
+    .switch input:checked + .toggle::after{left:25px; background:#0b1226}
+    .state{font-weight:800; color:#a7f3d0}
+    .state.off{color:#fca5a5}
+    .seg{display:flex; gap:6px; background:var(--panel); padding:6px; border:1px solid var(--edge); border-radius:12px; width:max-content}
+    .seg button{background:transparent; border:0; color:#cbd5e1; padding:8px 12px; border-radius:10px; cursor:pointer}
+    .seg button[aria-pressed="true"]{background:linear-gradient(135deg,var(--brand2),var(--brand)); color:#0b1226; font-weight:800}
+    textarea{width:100%; min-height:120px; resize:vertical}
+    .muted{color:var(--muted); font-size:12px}
+    .flex{display:flex; gap:10px; flex-wrap:wrap}
+    button{border:1px solid var(--edge); background:linear-gradient(135deg,#0b1226,#0f172a); color:#e5e7eb; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:800}
+    button:hover{transform:translateY(-1px)}
+    .brand{background:linear-gradient(135deg,var(--brand2),var(--brand)); color:#0b1226; border:none}
+    .pill{display:inline-flex; gap:8px; align-items:center; border:1px dashed #374151; padding:8px 10px; border-radius:999px; font-size:12px}
+    .errbox{border:1px solid rgba(239,68,68,.4); background:rgba(239,68,68,.08); color:#fecaca; padding:10px 12px; border-radius:12px; font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="badge">MM# Toolkit</div>
+      <h1>Wire Splice MM# Generator</h1>
+    </header>
+
+    <div class="grid">
+      <section class="card" aria-labelledby="inputs-title">
+        <h2 id="inputs-title">Inputs</h2>
+        <fieldset>
+          <div class="row">
+            <label>Is <u>Primary</u> being spliced?</label>
+            <div class="switch">
+              <input id="primarySplice" type="checkbox" />
+              <label class="toggle" for="primarySplice" aria-label="Primary being spliced"></label>
+              <span id="primaryState" class="state off">No</span>
+            </div>
+          </div>
+
+          <div class="row">
+            <label>Is <u>Secondary</u> being spliced?</label>
+            <div class="switch">
+              <input id="secondarySplice" type="checkbox" />
+              <label class="toggle" for="secondarySplice" aria-label="Secondary being spliced"></label>
+              <span id="secondaryState" class="state off">No</span>
+            </div>
+          </div>
+
+          <div class="row">
+            <label>Secondary type</label>
+            <div class="seg" role="group" aria-label="Secondary type">
+              <button id="secOpen" type="button" aria-pressed="true">Open wire</button>
+              <button id="secTriplex" type="button" aria-pressed="false">Triplex</button>
+            </div>
+          </div>
+
+          <div class="row">
+            <label><input type="checkbox" id="omitNeutral"> Omit neutral</label>
+            <div class="muted">Neutral is auto-included when Primary or Secondary is spliced. Check to omit.</div>
+          </div>
+
+          <div class="row">
+            <label>Primary wire size</label>
+            <select id="primarySize"></select>
+          </div>
+          <div class="row">
+            <label>Neutral wire size</label>
+            <select id="neutralSize"></select>
+          </div>
+          <div class="row">
+            <label>Secondary wire size</label>
+            <select id="secondarySize"></select>
+          </div>
+        </fieldset>
+      </section>
+
+      <section class="card" aria-labelledby="output-title">
+        <h2 id="output-title">Output</h2>
+        <div class="pill" id="statusPill">Ready</div>
+        <textarea id="out" readonly placeholder="DL7-201-0500(MM#X1A,MM#X1B,MM#X2A,MM#X2B) [or DL7-201-0500(MM#X1,MM#X2) x2 when sizes match]\nDL7-203-0500(MM#X3,MM#X4)\nDL7-204-0500(MM#X5,MM#X6)" aria-label="Generated output"></textarea>
+        <div id="errors" class="errbox" style="display:none"></div>
+        <div class="flex" style="margin-top:10px">
+          <button class="brand" id="copyBtn">Copy to Clipboard</button>
+          <button id="resetBtn">Reset</button>
+        </div>
+        <div class="muted" style="margin-top:6px">If an MM# is unavailable for the selected size/type, an error will appear below. Refer to HONI standards.</div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // ===== Sizes per prompt =====
+    const SIZES = ["#6","#4","#3","#2","1/0","2/0","3/0","266.8","336.4","350","477","500","556.5","1000"];
+
+    // ===== Hard-coded MM# maps (as provided) =====
+    // X1: Primary/Neutral connector
+    const X1 = new Map(Object.entries({
+      "#2":"30006175",
+      "1/0":"30006176",
+      "3/0":"3006178",   // (as provided)
+      "336.4":"3006141",  // (as provided)
+      "556.5":"30006709"
+    }));
+
+    // X2 & X4: Spare cable wire
+    const X2 = new Map(Object.entries({"#2":"30016222","1/0":"30005782","3/0":"30005783"}));
+    const X4 = X2; // same values per prompt
+
+    // X3: Secondary OPEN WIRE connector
+    const X3 = new Map(Object.entries({
+      "#4":"30007167",
+      "#2":"30007168",
+      "1/0":"30007169",
+      "3/0":"30007198",
+      "336.4":"30007200",
+      "556.5":"30007201"
+    }));
+
+    // X5: Secondary TRIPLEX connector
+    const X5 = new Map(Object.entries({
+      "#6":"30006879",
+      "#4":"30006189",
+      "#2":"30006192",
+      "1/0":"30006194",
+      "3/0":"30006425"
+    }));
+
+    // X6: Spare cable for TRIPLEX secondary
+    const X6 = new Map(Object.entries({
+      "#4":"30005895",
+      "#2":"30006050",
+      "1/0":"30006110",
+      "3/0":"30006111"
+    }));
+
+    // ===== DOM helpers =====
+    const el = id => document.getElementById(id);
+    const primarySplice = el('primarySplice');
+    const secondarySplice = el('secondarySplice');
+    const primaryState = el('primaryState');
+    const secondaryState = el('secondaryState');
+    const primarySize = el('primarySize');
+    const neutralSize = el('neutralSize');
+    const secondarySize = el('secondarySize');
+    const secOpen = el('secOpen');
+    const secTriplex = el('secTriplex');
+    const omitNeutral = el('omitNeutral');
+    const out = el('out');
+    const errorsBox = el('errors');
+    const statusPill = el('statusPill');
+
+    // Build size selects
+    for (const sel of [primarySize, neutralSize, secondarySize]){
+      SIZES.forEach(s => { const o = document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+    }
+    // Defaults
+    primarySize.value = "1/0"; neutralSize.value = "#2"; secondarySize.value = "#4";
+
+    // Secondary type state
+    let secondaryType = 'open'; // 'open' | 'triplex'
+    function setSecondaryType(t){
+      secondaryType = t;
+      secOpen.setAttribute('aria-pressed', t==='open');
+      secTriplex.setAttribute('aria-pressed', t==='triplex');
+      update();
+    }
+
+    secOpen.addEventListener('click', ()=>setSecondaryType('open'));
+    secTriplex.addEventListener('click', ()=>setSecondaryType('triplex'));
+
+    // Toggles UI text
+    function updateToggleLabels(){
+      primaryState.textContent = primarySplice.checked ? 'Yes' : 'No';
+      primaryState.className = 'state ' + (primarySplice.checked ? '' : 'off');
+      secondaryState.textContent = secondarySplice.checked ? 'Yes' : 'No';
+      secondaryState.className = 'state ' + (secondarySplice.checked ? '' : 'off');
+    }
+
+    // Generate output lines per spec
+    function generate(){
+      const lines = [];
+      const errs = [];
+
+      // 201 logic:
+      // - If PRIMARY is spliced:
+      //     - If omitNeutral: output PRIMARY only → DL7-201-0500(X1p,X2p)
+      //     - Else: include both PRIMARY and NEUTRAL
+      //         - If sizes equal: DL7-201-0500(X1p,X2p) x2
+      //         - Else: DL7-201-0500(X1p,X1n,X2p,X2n)
+      // - If ONLY SECONDARY is spliced (primary off):
+      //     - If omitNeutral: no 201
+      //     - Else: output NEUTRAL only → DL7-201-0500(X1n,X2n)
+
+      if (primarySplice.checked){
+        const p = primarySize.value;
+        const n = neutralSize.value;
+        const aP = X1.get(p), bP = X2.get(p);
+        if (!aP) errs.push(`DL7-201-0500 missing X1 for PRIMARY size ${p}`);
+        if (!bP) errs.push(`DL7-201-0500 missing X2 for PRIMARY size ${p}`);
+
+        if (!omitNeutral.checked){
+          if (p === n){
+            // Collapse duplicates → x2
+            if (aP && bP){ lines.push(`DL7-201-0500(${aP},${bP}) x2`); }
+          } else {
+            const aN = X1.get(n), bN = X2.get(n);
+            if (!aN) errs.push(`DL7-201-0500 missing X1 for NEUTRAL size ${n}`);
+            if (!bN) errs.push(`DL7-201-0500 missing X2 for NEUTRAL size ${n}`);
+            if (aP && aN && bP && bN){ lines.push(`DL7-201-0500(${aP},${aN},${bP},${bN})`); }
+          }
+        } else {
+          // omit neutral → primary only
+          if (aP && bP){ lines.push(`DL7-201-0500(${aP},${bP})`); }
+        }
+      } else if (secondarySplice.checked){
+        // Only secondary spliced
+        if (!omitNeutral.checked){
+          const n = neutralSize.value; const aN = X1.get(n), bN = X2.get(n);
+          if (!aN) errs.push(`DL7-201-0500 missing X1 for NEUTRAL size ${n}`);
+          if (!bN) errs.push(`DL7-201-0500 missing X2 for NEUTRAL size ${n}`);
+          if (aN && bN){ lines.push(`DL7-201-0500(${aN},${bN})`); }
+        }
+      }
+
+      // Secondary lines (only if secondary splice is on)
+      if (secondarySplice.checked){
+        const s = secondarySize.value;
+        if (secondaryType === 'open'){
+          const a = X3.get(s), b = X4.get(s);
+          if (!a) errs.push(`DL7-203-0500 missing X3 for size ${s}`);
+          if (!b) errs.push(`DL7-203-0500 missing X4 for size ${s}`);
+          if (a && b) lines.push(`DL7-203-0500(${a},${b})`);
+        } else {
+          const a = X5.get(s), b = X6.get(s);
+          if (!a) errs.push(`DL7-204-0500 missing X5 for size ${s}`);
+          if (!b) errs.push(`DL7-204-0500 missing X6 for size ${s}`);
+          if (a && b) lines.push(`DL7-204-0500(${a},${b})`);
+        }
+      }
+
+      return {lines, errs};
+    }
+
+    function update(){
+      updateToggleLabels();
+      const {lines, errs} = generate();
+      out.value = lines.join('\n');
+      if (errs.length){
+        errorsBox.style.display = '';
+        errorsBox.innerHTML = `<strong>Missing MM#s:</strong><br>${errs.map(e=>`• ${e}`).join('<br>')}<br><em>Please refer to HONI standards.</em>`;
+        statusPill.textContent = 'Warnings present';
+      } else {
+        errorsBox.style.display = 'none';
+        errorsBox.textContent = '';
+        statusPill.textContent = 'Ready';
+      }
+    }
+
+    ;[primarySplice, secondarySplice, primarySize, neutralSize, secondarySize, omitNeutral].forEach(x=>x.addEventListener('change', update));
+
+    el('copyBtn').addEventListener('click', async ()=>{
+      try{ await navigator.clipboard.writeText(out.value); const b = el('copyBtn'); const prev=b.textContent; b.textContent='Copied!'; setTimeout(()=>b.textContent=prev, 900);}catch{ alert('Copy failed. Select the text and copy manually.'); }
+    });
+
+    el('resetBtn').addEventListener('click', ()=>{
+      primarySplice.checked = false; secondarySplice.checked = false; setSecondaryType('open');
+      primarySize.selectedIndex = 0; neutralSize.selectedIndex = 0; secondarySize.selectedIndex = 0; omitNeutral.checked = false; update();
+    });
+
+    // Init
+    function setSecondaryTypeBoot(t){ secondaryType = t; secOpen.setAttribute('aria-pressed', t==='open'); secTriplex.setAttribute('aria-pressed', t==='triplex'); }
+    setSecondaryTypeBoot('open');
+    update();
+  </script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Pressure Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .calculator-card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            padding: 2.5rem;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            transition: all 0.3s ease-in-out;
+        }
+        .btn {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        #result {
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="calculator-card w-full max-w-lg">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Wind Pressure Calculator</h1>
+            <p class="text-gray-500 mt-2">For Engineering Utility Poles</p>
+        </div>
+
+        <!-- Instructions & Link -->
+        <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 rounded-md mb-6">
+            <p class="font-medium">How to Use:</p>
+            <ol class="list-decimal list-inside mt-2 space-y-1">
+                <li>Click the button below to find the 10-minute max wind speed for your location.</li>
+                <li>Enter the value (in km/h) into the input field.</li>
+                <li>Click "Calculate" to see the resulting pressure.</li>
+            </ol>
+        </div>
+        
+        <a href="https://meteologix.com/ca/observations/wind-average-10min.html" target="_blank" class="btn w-full flex items-center justify-center bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-4 rounded-lg mb-6 text-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+            Open Meteologix.com
+        </a>
+
+        <!-- Calculator Form -->
+        <div class="space-y-4">
+            <div>
+                <label for="windSpeed" class="block text-sm font-medium text-gray-700 mb-1">10-Min Max Wind Speed (km/h)</label>
+                <input type="number" id="windSpeed" placeholder="e.g., 50" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <button id="calculateBtn" class="btn w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg">
+                Calculate Pressure
+            </button>
+        </div>
+
+        <!-- Result Display -->
+        <div id="result" class="mt-8 p-6 bg-gray-50 rounded-lg text-center opacity-0">
+            <h2 class="text-lg font-semibold text-gray-800">Calculated Wind Pressure:</h2>
+            <p id="resultValue" class="text-4xl font-bold text-indigo-600 mt-2"></p>
+            <p class="text-sm text-gray-500 mt-1">Pascals (Pa)</p>
+        </div>
+        
+        <!-- Formula Display -->
+        <div class="text-center mt-8">
+             <p class="text-xs text-gray-400">Formula: P = (0.613) * (1.86) * (V <sub>km/h</sub> / 3.6)<sup>2</sup></p>
+        </div>
+
+    </div>
+
+    <script>
+        // Get references to the DOM elements
+        const windSpeedInput = document.getElementById('windSpeed');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const resultDiv = document.getElementById('result');
+        const resultValue = document.getElementById('resultValue');
+
+        // Function to perform the calculation
+        function calculatePressure() {
+            const windSpeedKmh = parseFloat(windSpeedInput.value);
+
+            // Validate the input
+            if (isNaN(windSpeedKmh) || windSpeedKmh < 0) {
+                alert("Please enter a valid, positive number for wind speed.");
+                return;
+            }
+
+            // Apply the formula: P = (0.613) * (1.86) * (V_kmh / 3.6)^2
+            const pressure = 0.613 * 1.86 * Math.pow(windSpeedKmh / 3.6, 2);
+
+            // Display the result
+            resultValue.textContent = pressure.toFixed(2); // Format to 2 decimal places
+            resultDiv.classList.remove('opacity-0');
+        }
+
+        // Add event listener to the button
+        calculateBtn.addEventListener('click', calculatePressure);
+        
+        // Allow calculation by pressing Enter key in the input field
+        windSpeedInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                calculatePressure();
+            }
+        });
+    </script>
+
+</body>
+</html>

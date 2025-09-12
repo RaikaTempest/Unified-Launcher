@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV to KML Converter (No-ZIP)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .file-input-label {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            background-color: #4f46e5;
+            color: white;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        .file-input-label:hover {
+            background-color: #4338ca;
+        }
+        #csvFile {
+            display: none;
+        }
+        .dragover {
+            border-style: dashed;
+            border-color: #4f46e5;
+            background-color: #f0f3ff;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="drop-zone" class="bg-white p-8 rounded-xl shadow-lg w-full max-w-2xl mx-4 border-2 border-transparent transition-all duration-300">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">CSV to KML Converter</h1>
+            <p class="text-gray-500 mt-2">Upload your CSV to generate one or more KML files.</p>
+        </div>
+
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md mb-6">
+            <div class="flex">
+                <div class="py-1"><i class="fa-solid fa-circle-info text-blue-500"></i></div>
+                <div class="ml-3">
+                    <p class="text-sm text-blue-700">
+                        Must contain <strong class="font-semibold">'Latitude'</strong> and <strong class="font-semibold">'Longitude'</strong> columns.
+                        If a column containing the word <strong class="font-semibold">'Request'</strong> is found, a separate download link will be generated for each unique request.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mb-6 pointer-events-none">
+            <i class="fas fa-cloud-upload-alt text-6xl text-gray-300 mb-4"></i>
+            <p class="text-gray-500 mb-2">Drag & Drop your file here or</p>
+            <label for="csvFile" class="file-input-label pointer-events-auto">
+                <i class="fa-solid fa-upload mr-2"></i>
+                <span id="file-chosen">Choose a CSV File</span>
+            </label>
+            <input type="file" id="csvFile" accept=".csv">
+        </div>
+
+        <div class="text-center min-h-[7rem] flex flex-col items-center justify-center">
+            <p id="status" class="text-gray-600 mb-4"></p>
+            <div id="action-buttons-container" class="w-full flex flex-col items-center space-y-3"></div>
+            <p id="earth-instructions" class="hidden text-xs text-gray-500 mt-3">First download a file, then upload it to Google Earth.</p>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const csvFileInput = document.getElementById('csvFile');
+        const fileChosenLabel = document.getElementById('file-chosen');
+        const statusEl = document.getElementById('status');
+        const actionButtonsContainer = document.getElementById('action-buttons-container');
+        const earthInstructions = document.getElementById('earth-instructions');
+
+        let csvData = null;
+        let originalFileName = 'converted_data';
+
+        // --- Event Listeners ---
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                csvFileInput.files = files;
+                handleFile(files[0]);
+            }
+        });
+        csvFileInput.addEventListener('change', () => {
+            if (csvFileInput.files.length > 0) handleFile(csvFileInput.files[0]);
+        });
+
+        function handleFile(file) {
+            if (file && file.type === "text/csv") {
+                originalFileName = file.name.replace(/\.[^/.]+$/, "");
+                fileChosenLabel.textContent = file.name;
+                actionButtonsContainer.innerHTML = '';
+                earthInstructions.classList.add('hidden');
+                statusEl.textContent = 'Reading file...';
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    csvData = e.target.result;
+                    convertData();
+                };
+                reader.readAsText(file);
+            } else {
+                statusEl.textContent = 'Please drop or select a valid .csv file.';
+                fileChosenLabel.textContent = 'Choose a CSV File';
+                csvData = null;
+                actionButtonsContainer.innerHTML = '';
+                earthInstructions.classList.add('hidden');
+            }
+        }
+
+        function convertData() {
+            if (!csvData) {
+                statusEl.textContent = 'Error: No file data to process.';
+                return;
+            }
+            try {
+                statusEl.textContent = 'Processing...';
+                const parsedData = parseCSV(csvData);
+                createDownloadLinks(parsedData.data, parsedData.headers);
+            } catch (error) {
+                statusEl.textContent = `Error: ${error.message}`;
+                actionButtonsContainer.innerHTML = '';
+                earthInstructions.classList.add('hidden');
+            }
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split(/\r\n|\n/);
+            if (lines.length < 2) throw new Error("CSV must have a header and at least one data row.");
+
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const latIndex = headers.findIndex(h => h.includes('latitude'));
+            const lonIndex = headers.findIndex(h => h.includes('longitude'));
+            if (latIndex === -1 || lonIndex === -1) throw new Error("CSV must contain 'Latitude' and 'Longitude' columns.");
+
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim() === '') continue;
+                const values = lines[i].split(',');
+                let row = {};
+                headers.forEach((header, index) => {
+                    row[header] = values[index] ? values[index].trim() : '';
+                });
+                data.push(row);
+            }
+            return { data, headers };
+        }
+
+        function generateKMLString(data, headers, docName) {
+            const nameHeader = headers.find(h => ['name', 'placemark', 'title', 'barcode', 'barcode id'].includes(h)) || headers[0];
+            const descriptionHeader = headers.find(h => ['description', 'desc'].includes(h) || h.includes('request'));
+
+            let placemarks = '';
+            data.forEach(row => {
+                const lon = parseFloat(row.longitude);
+                const lat = parseFloat(row.latitude);
+                if (isNaN(lon) || isNaN(lat)) return;
+
+                const name = row[nameHeader] || 'Untitled Placemark';
+                let description = (descriptionHeader && row[descriptionHeader])
+                    ? row[descriptionHeader]
+                    : headers
+                        .filter(h => h !== 'latitude' && h !== 'longitude' && h !== nameHeader)
+                        .map(h => `<strong>${h.charAt(0).toUpperCase() + h.slice(1)}:</strong> ${row[h] || 'N/A'}`)
+                        .join('<br>');
+
+                placemarks += `
+        <Placemark>
+            <name><![CDATA[${name}]]></name>
+            <description><![CDATA[${description}]]></description>
+            <Point>
+                <coordinates>${lon},${lat},0</coordinates>
+            </Point>
+        </Placemark>`;
+            });
+
+            return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+    <Document>
+        <name>${docName}</name>${placemarks}
+    </Document>
+</kml>`;
+        }
+        
+        function createAndAppendLink(text, href, downloadName, isPrimary, isEarthLink = false) {
+             const link = document.createElement('a');
+             link.href = href;
+             if (downloadName) {
+                 link.download = downloadName;
+             }
+             if(isEarthLink) {
+                 link.target = "_blank";
+             }
+             link.innerHTML = text;
+             link.className = `w-full sm:w-auto px-6 py-3 font-semibold rounded-lg transition-colors duration-300 text-center ${isPrimary ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-blue-600 text-white hover:bg-blue-700'}`;
+             actionButtonsContainer.appendChild(link);
+        }
+
+        function createDownloadLinks(data, headers) {
+            actionButtonsContainer.innerHTML = ''; // Clear previous buttons
+            const requestHeader = headers.find(h => h.includes('request'));
+            
+            if (requestHeader) {
+                const groupedData = data.reduce((acc, row) => {
+                    const groupKey = row[requestHeader] || 'Uncategorized';
+                    if (!acc[groupKey]) acc[groupKey] = [];
+                    acc[groupKey].push(row);
+                    return acc;
+                }, {});
+
+                statusEl.textContent = `Conversion successful! ${Object.keys(groupedData).length} KML files created.`;
+                
+                Object.keys(groupedData).forEach(groupName => {
+                    const docName = `${originalFileName} - ${groupName}`;
+                    const kmlString = generateKMLString(groupedData[groupName], headers, docName);
+                    const safeFileName = groupName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                    const blob = new Blob([kmlString], { type: 'application/vnd.google-earth.kml+xml' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    createAndAppendLink(`<i class="fa-solid fa-download mr-2"></i>Download: ${groupName}`, url, `${safeFileName}.kml`, true);
+                });
+
+            } else {
+                statusEl.textContent = 'Conversion successful! Your KML file is ready.';
+                const kmlString = generateKMLString(data, headers, originalFileName);
+                const blob = new Blob([kmlString], { type: 'application/vnd.google-earth.kml+xml' });
+                const url = URL.createObjectURL(blob);
+                createAndAppendLink(`<i class="fa-solid fa-download mr-2"></i>Download KML`, url, `${originalFileName}.kml`, true);
+            }
+            
+            // Add the "View on Earth" link last
+            createAndAppendLink(`<i class="fa-solid fa-globe-americas mr-2"></i>View on Google Earth`, 'https://earth.google.com/web/', null, false, true);
+            earthInstructions.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

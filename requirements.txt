@@ -1,0 +1,11 @@
+# Add the packages your Python tools need, one per line.
+# Examples:
+# requests
+# openpyxl
+# pandas
+
+tqdm
+pandas
+openpyxl
+Pillow
+pillow-heif
