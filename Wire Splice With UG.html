@@ -87,6 +87,11 @@
             </div>
           </div>
 
+          <div class="row" id="ugSizeRow" style="display:none">
+            <label for="ugSize">U/G wire size</label>
+            <select id="ugSize"></select>
+          </div>
+
           <div class="row">
             <label>Secondary type</label>
             <div class="seg" role="group" aria-label="Secondary type">
@@ -132,6 +137,7 @@
   <script>
     // ===== Sizes per prompt =====
     const SIZES = ["#6","#4","#3","#2","1/0","2/0","3/0","266.8","336.4","350","477","500","556.5","1000"];
+    const UG_SIZES = ["3/0","4/0","250","500","Unknown"];
 
     // ===== Hard-coded MM# maps (as provided) =====
     // X1: Primary/Neutral connector
@@ -174,6 +180,15 @@
       "3/0":"30006111"
     }));
 
+    // Underground splice MM#s
+    const UG_MM = new Map(Object.entries({
+      "3/0":["30006695","3005908"],
+      "4/0":["30006456","60006112"],
+      "250":["30006455","30005915"],
+      "500":["30006397","30005959"],
+      "Unknown":["30006695","3005908"]
+    }));
+
     // ===== DOM helpers =====
     const el = id => document.getElementById(id);
     const primarySplice = el('primarySplice');
@@ -182,6 +197,8 @@
     const primaryState = el('primaryState');
     const secondaryState = el('secondaryState');
     const ugState = el('ugState');
+    const ugSizeRow = el('ugSizeRow');
+    const ugSize = el('ugSize');
     const primarySize = el('primarySize');
     const neutralSize = el('neutralSize');
     const secondarySize = el('secondarySize');
@@ -196,8 +213,10 @@
     for (const sel of [primarySize, neutralSize, secondarySize]){
       SIZES.forEach(s => { const o = document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
     }
+    UG_SIZES.forEach(s => { const o = document.createElement('option'); o.value=s; o.textContent=s; ugSize.appendChild(o); });
     // Defaults
     primarySize.value = "1/0"; neutralSize.value = "#2"; secondarySize.value = "#4";
+    ugSize.value = "3/0";
 
     // Secondary type state
     let secondaryType = 'open'; // 'open' | 'triplex'
@@ -285,7 +304,14 @@
 
       // U/G secondary splice
       if (ugSplice.checked){
-        lines.push('DL7-204-0500(30006425,30005908)');
+        const size = ugSize.value;
+        const pair = UG_MM.get(size);
+        if (!pair){
+          errs.push(`DU7-422-0500 FIG. 1 missing MM#s for U/G size ${size}`);
+        } else {
+          const [mm1, mm2] = pair;
+          lines.push(`DU7-422-0500 FIG. 1(${mm1},${mm2})`);
+        }
       }
       // Deduplicate identical lines and increment counts
       const counts = new Map();
@@ -307,6 +333,8 @@
 
     function update(){
       updateToggleLabels();
+      ugSizeRow.style.display = ugSplice.checked ? 'grid' : 'none';
+      ugSize.disabled = !ugSplice.checked;
       const {lines, errs} = generate();
       out.value = lines.join('\n');
       if (errs.length){
@@ -320,7 +348,7 @@
       }
     }
 
-    ;[primarySplice, secondarySplice, ugSplice, primarySize, neutralSize, secondarySize, omitNeutral].forEach(x=>x.addEventListener('change', update));
+    ;[primarySplice, secondarySplice, ugSplice, primarySize, neutralSize, secondarySize, omitNeutral, ugSize].forEach(x=>x.addEventListener('change', update));
 
     el('copyBtn').addEventListener('click', async ()=>{
       try{ await navigator.clipboard.writeText(out.value); const b = el('copyBtn'); const prev=b.textContent; b.textContent='Copied!'; setTimeout(()=>b.textContent=prev, 900);}catch{ alert('Copy failed. Select the text and copy manually.'); }
@@ -328,7 +356,8 @@
 
     el('resetBtn').addEventListener('click', ()=>{
       primarySplice.checked = false; secondarySplice.checked = false; ugSplice.checked = false; setSecondaryType('open');
-      primarySize.selectedIndex = 0; neutralSize.selectedIndex = 0; secondarySize.selectedIndex = 0; omitNeutral.checked = false; update();
+      primarySize.selectedIndex = 0; neutralSize.selectedIndex = 0; secondarySize.selectedIndex = 0; ugSize.selectedIndex = 0;
+      omitNeutral.checked = false; update();
     });
 
     // Init
